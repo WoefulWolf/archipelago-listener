@@ -35,7 +35,7 @@ const checkRemoteContainerPort = (port) => {
 
 function getHexColorFromIndex(index, len) {
     const totalSlots = len <= 0 ? 1 : len;
-    const hue = (index / totalSlots) * 360;
+    const hue = ((index / totalSlots) * 360) % 360;
 
     const s = 0.85;
     const l = 0.55;
@@ -57,8 +57,7 @@ function getHexColorFromIndex(index, len) {
     const gInt = Math.round((g + m) * 255);
     const bInt = Math.round((b + m) * 255);
 
-    const toHex = (num) => num.toString(16).padStart(2, "0");
-    return `#${toHex(rInt)}${toHex(gInt)}${toHex(bInt)}`;
+    return (rInt << 16) | (gInt << 8) | bInt;
 }
 
 class RoomMonitor {
