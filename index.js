@@ -119,15 +119,10 @@ class RoomMonitor {
             this.isConnecting = false;
             console.log(`[Port ${this.port}] Connected globally. Monitoring ALL slots.`);
 
-            this.client.addListener("printJson", (packet) => {
+            this.client.socket.on("printJson", (packet) => {
                 if (packet.type === "ItemSend" || packet.type === "Hint" || packet.receiving !== undefined) {
                     this.onLocationChecked(packet);
                 }
-            });
-
-            this.client.socket.addEventListener("close", () => {
-                console.log(`[Port ${this.port}] Room connection severed.`);
-                this.disconnect();
             });
 
         } catch (err) {
