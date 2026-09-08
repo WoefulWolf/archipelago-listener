@@ -106,7 +106,7 @@ class RoomMonitor {
                     );
                     connected = true;
                     break;
-                } catch (ArgumentError) {
+                } catch (err) {
                     console.warn(`[Port ${this.port}] Slot "${slot}" failed: ${err.message || err}`);
                 }
             }
@@ -126,7 +126,7 @@ class RoomMonitor {
             });
 
         } catch (err) {
-            console.error(`[Port ${this.port}] Read-Only Handshake Failed: ${err.message || err}`);
+            console.error(`[Port ${this.port}] Handshake Failed: ${err.message || err}`);
             this.isConnected = false;
             this.isConnecting = false;
             this.client = null;
