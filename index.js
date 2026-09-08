@@ -145,6 +145,8 @@ class RoomMonitor {
     async onLocationChecked(packet) {
         if (!WEBHOOK_URL) return;
 
+        console.log(packet);
+
         const formattedMessage = packet.data.map(piece => {
             switch (piece.type) {
                 case "player_id":
@@ -174,21 +176,21 @@ class RoomMonitor {
                     content: ``,
                     embeds: [
                         {
-                            description: `${formattedMessage}`,
-                            color: `${embedColor}`,
+                            description: formattedMessage,
+                            color: embedColor,
                         }
                     ]
 
                 })
             });
         } catch (err) {
-            console.error(`[Port ${this.port}] Failed to send webhook:`, err.message);
+            console.error(`[Port ${this.port}] Failed to send webhook: `, err.message);
         }
     }
 }
 
-console.log(`Starting archipelago-listener...`);
-console.log(`Target Range: ${TARGET_HOST}:${START_PORT} ➔ ${TARGET_HOST}:${END_PORT}`);
+console.log(`Starting archipelago- listener...`);
+console.log(`Target Range: ${TARGET_HOST}: ${START_PORT} ➔ ${TARGET_HOST}: ${END_PORT}`);
 
 const monitors = [];
 for (let port = START_PORT; port <= END_PORT; port++) {
