@@ -174,8 +174,6 @@ class RoomMonitor {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     username: BOT_NAME,
-                    avatar_url: "",
-                    content: "",
                     embeds: [
                         {
                             title: "",
