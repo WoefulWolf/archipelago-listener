@@ -89,7 +89,7 @@ class RoomMonitor {
             const wsUrl = `ws://${TARGET_HOST}:${this.port}`;
             console.log(`[Port ${this.port}] Initializing Read-Only Global Connection to ${wsUrl}...`);
 
-            await this.client.login(wsUrl, "", "");
+            await this.client.login(wsUrl, "Tracker", "");
 
             this.isConnected = true;
             this.isConnecting = false;
