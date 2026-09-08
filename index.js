@@ -94,6 +94,7 @@ class RoomMonitor {
                 `${BOT_NAME}`,
                 "",
                 {
+                    slotData: false,
                     tags: ["Tracker"]
                 }
             );
