@@ -142,22 +142,58 @@ class RoomMonitor {
         }
     }
 
+    getItemName(game, itemId) {
+        const gamePackage = this.client.package.get(game);
+        if (!gamePackage || !gamePackage.item_name_to_id) return null;
+
+        const entry = Object.entries(gamePackage.item_name_to_id)
+            .find(([_, id]) => id === itemId);
+
+        return entry ? entry[0] : null;
+    }
+
+    getLocationName(game, locationId) {
+        const gamePackage = this.client.package.get(game);
+        if (!gamePackage || !gamePackage.location_name_to_id) return null;
+
+        const entry = Object.entries(gamePackage.location_name_to_id)
+            .find(([_, id]) => id === locationId);
+
+        return entry ? entry[0] : null;
+    }
+
     async onLocationChecked(packet) {
         if (!WEBHOOK_URL) return;
 
-        console.log(packet);
+        const targetPlayerId = packet.receiving ?? packet.item?.player;
+        const targetGame = this.client.players.get(targetPlayerId)?.game || "";
 
         const formattedMessage = packet.data.map(piece => {
             switch (piece.type) {
-                case "player_id":
+                case "player_id": {
+                    const id = parseInt(piece.text, 10);
+                    const player = this.client.players.get(id);
+                    return `**${player?.alias || player?.name || piece.text}**`;
+                }
+
+                case "item_id": {
+                    const id = parseInt(piece.text, 10);
+                    const name = this.getItemName(this.client, targetGame, id);
+                    return `__${name || piece.text}__`;
+                }
+
+                case "location_id": {
+                    const id = parseInt(piece.text, 10);
+                    const name = this.getLocationName(this.client, targetGame, id);
+                    return `*${name || piece.text}*`;
+                }
+
                 case "player_name":
                     return `**${piece.text}**`;
 
-                case "item_id":
                 case "item_name":
                     return `__${piece.text}__`;
 
-                case "location_id":
                 case "location_name":
                     return `*${piece.text}*`;
 
