@@ -1,11 +1,11 @@
 import net from "net";
-import { Client } from "archipelago.js";
+import { Client, ArgumentError } from "archipelago.js";
 
 const TARGET_HOST = process.env.TARGET_HOST || "localhost";
 const START_PORT = parseInt(process.env.START_PORT || "50000", 10);
 const END_PORT = parseInt(process.env.END_PORT || "50009", 10);
 const SCAN_INTERVAL_MS = parseInt(process.env.SCAN_INTERVAL_MS || "5000", 10);
-const BOT_NAME = process.env.BOT_NAME || "Archie";
+const SLOTS = process.env.SLOTS;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 
 if (!WEBHOOK_URL) {
@@ -82,6 +82,8 @@ class RoomMonitor {
     }
 
     async connectToArchipelago() {
+        if (!SLOTS) return;
+
         this.isConnecting = true;
         this.client = new Client();
 
@@ -89,15 +91,29 @@ class RoomMonitor {
             const wsUrl = `ws://${TARGET_HOST}:${this.port}`;
             console.log(`[Port ${this.port}] Initializing Read-Only Global Connection to ${wsUrl}...`);
 
-            await this.client.login(
-                wsUrl,
-                `${BOT_NAME}`,
-                "",
-                {
-                    slotData: false,
-                    tags: ["Tracker"]
+            let connected = false;
+
+            for (const slot of SLOTS) {
+                try {
+                    await this.client.login(
+                        wsUrl,
+                        `${slot}`,
+                        "",
+                        {
+                            slotData: false,
+                            tags: ["Tracker"]
+                        }
+                    );
+                    connected = true;
+                    break;
+                } catch (ArgumentError) {
+                    console.warn(`[Port ${this.port}] Slot "${slot}" failed: ${err.message || err}`);
                 }
-            );
+            }
+
+            if (!connected) {
+                throw new Error("All slots failed to authenticate.");
+            }
 
             this.isConnected = true;
             this.isConnecting = false;
