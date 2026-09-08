@@ -142,6 +142,10 @@ class RoomMonitor {
         }
     }
 
+    getPlayer(id) {
+        return this.client.players.findPlayer(id) || null;
+    }
+
     getItemName(game, itemId) {
         const gamePackage = this.client.package.get(game);
         if (!gamePackage || !gamePackage.item_name_to_id) return null;
@@ -166,25 +170,27 @@ class RoomMonitor {
         if (!WEBHOOK_URL) return;
 
         const targetPlayerId = packet.receiving ?? packet.item?.player;
-        const targetGame = this.client.players.get(targetPlayerId)?.game || "";
+        const targetGame = this.getPlayer(targetPlayerId)?.game || "";
 
         const formattedMessage = packet.data.map(piece => {
             switch (piece.type) {
                 case "player_id": {
                     const id = parseInt(piece.text, 10);
-                    const player = this.client.players.get(id);
+                    const player = this.getPlayer(id);
                     return `**${player?.alias || player?.name || piece.text}**`;
                 }
 
                 case "item_id": {
+                    const game = this.getPlayer(piece.player)?.game || "";
                     const id = parseInt(piece.text, 10);
-                    const name = this.getItemName(this.client, targetGame, id);
+                    const name = this.getItemName(game, id);
                     return `__${name || piece.text}__`;
                 }
 
                 case "location_id": {
+                    const game = this.getPlayer(piece.player)?.game || "";
                     const id = parseInt(piece.text, 10);
-                    const name = this.getLocationName(this.client, targetGame, id);
+                    const name = this.getLocationName(game, id);
                     return `*${name || piece.text}*`;
                 }
 
