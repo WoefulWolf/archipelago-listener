@@ -1,7 +1,0 @@
-{
-    "name": "ap-local-listener",
-    "type": "module",
-    "dependencies": {
-        "archipelago.js": "^2.0.0"
-    }
-}

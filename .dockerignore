@@ -1,0 +1,8 @@
+# Host build artifacts must never reach the Linux build.
+target/
+
+.git/
+.gitignore
+.gitattributes
+Dockerfile
+.dockerignore
