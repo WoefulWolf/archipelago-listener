@@ -117,9 +117,9 @@ class RoomMonitor {
 
             this.isConnected = true;
             this.isConnecting = false;
-            console.log(`[Port ${this.port}] Connected globally. Monitoring ALL slots.`);
+            console.log(`[Port ${this.port}] Connected.`);
 
-            this.client.socket.on("printJson", (packet) => {
+            this.client.socket.on("printJSON", (packet) => {
                 if (packet.type === "ItemSend" || packet.type === "Hint" || packet.receiving !== undefined) {
                     this.onLocationChecked(packet);
                 }
