@@ -145,8 +145,6 @@ class RoomMonitor {
     async onLocationChecked(packet) {
         if (!WEBHOOK_URL) return;
 
-        console.log(`[Port ${this.port}] Sent: ${packet.message}`);
-
         const formattedMessage = packet.data.map(piece => {
             switch (piece.type) {
                 case "player_id":
@@ -176,7 +174,7 @@ class RoomMonitor {
                     content: ``,
                     embeds: [
                         {
-                            description: `${messageText}`,
+                            description: `${formattedMessage}`,
                             color: `${embedColor}`,
                         }
                     ]
