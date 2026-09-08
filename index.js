@@ -4,7 +4,7 @@ import { Client, ArgumentError } from "archipelago.js";
 const TARGET_HOST = process.env.TARGET_HOST || "localhost";
 const START_PORT = parseInt(process.env.START_PORT || "50000", 10);
 const END_PORT = parseInt(process.env.END_PORT || "50009", 10);
-const SCAN_INTERVAL_MS = parseInt(process.env.SCAN_INTERVAL_MS || "5000", 10);
+const SCAN_INTERVAL_MS = parseInt(process.env.SCAN_INTERVAL_MS || "30000", 10);
 const BOT_NAME = process.env.BOT_NAME || "Archie";
 const SLOTS = process.env.SLOTS ? process.env.SLOTS.split(',') : null;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
@@ -170,7 +170,7 @@ class RoomMonitor {
         const embedColor = getHexColorFromIndex(this.port - START_PORT, END_PORT - START_PORT);
 
         try {
-            await fetch(WEBHOOK_URL, {
+            const response = await fetch(WEBHOOK_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -188,6 +188,11 @@ class RoomMonitor {
 
                 })
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[Port ${this.port}] Webhook failed with status ${response.status}:`, errorText);
+            }
         } catch (err) {
             console.error(`[Port ${this.port}] Failed to send webhook: `, err.message);
         }
