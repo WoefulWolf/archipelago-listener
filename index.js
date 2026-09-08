@@ -5,6 +5,7 @@ const TARGET_HOST = process.env.TARGET_HOST || "localhost";
 const START_PORT = parseInt(process.env.START_PORT || "50000", 10);
 const END_PORT = parseInt(process.env.END_PORT || "50009", 10);
 const SCAN_INTERVAL_MS = parseInt(process.env.SCAN_INTERVAL_MS || "5000", 10);
+const BOT_NAME = process.env.BOT_NAME || "Archie";
 const SLOTS = process.env.SLOTS ? process.env.SLOTS.split(',') : null;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 
@@ -173,11 +174,15 @@ class RoomMonitor {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    content: ``,
+                    username: BOT_NAME,
+                    avatar_url: "",
+                    content: "",
                     embeds: [
                         {
+                            title: "",
                             description: formattedMessage,
                             color: embedColor,
+                            fields: []
                         }
                     ]
 
