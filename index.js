@@ -64,6 +64,9 @@ class RoomMonitor {
     constructor(port) {
         this.port = port;
         this.client = null;
+        this.dataPackage = null;
+        this.itemCache = new Map();
+        this.locationCache = new Map();
         this.isConnected = false;
         this.isConnecting = false;
     }
@@ -78,6 +81,29 @@ class RoomMonitor {
         else if (!isOpen && this.isConnected) {
             console.log(`[Port ${this.port}] Server went offline inside container. Cleaning up.`);
             this.disconnect();
+        }
+    }
+
+    async buildLookupCaches() {
+        this.dataPackage = await this.client.package.fetchPackage();
+
+        this.itemCache.clear();
+        this.locationCache.clear();
+
+        if (!this.dataPackage?.games) return;
+
+        for (const [gameName, gamePkg] of Object.entries(this.dataPackage.games)) {
+            if (gamePkg.item_name_to_id) {
+                for (const [itemName, id] of Object.entries(gamePkg.item_name_to_id)) {
+                    this.itemCache.set(`${gameName}:${id}`, itemName);
+                }
+            }
+
+            if (gamePkg.location_name_to_id) {
+                for (const [locName, id] of Object.entries(gamePkg.location_name_to_id)) {
+                    this.locationCache.set(`${gameName}:${id}`, locName);
+                }
+            }
         }
     }
 
@@ -118,6 +144,7 @@ class RoomMonitor {
             this.isConnected = true;
             this.isConnecting = false;
             console.log(`[Port ${this.port}] Connected.`);
+            await this.buildLookupCaches();
 
             this.client.socket.on("printJSON", (packet) => {
                 if (packet.type === "ItemSend" || packet.type === "Hint" || packet.receiving !== undefined) {
@@ -147,23 +174,11 @@ class RoomMonitor {
     }
 
     getItemName(game, itemId) {
-        const gamePackage = this.client.package.get(game);
-        if (!gamePackage || !gamePackage.item_name_to_id) return null;
-
-        const entry = Object.entries(gamePackage.item_name_to_id)
-            .find(([_, id]) => id === itemId);
-
-        return entry ? entry[0] : null;
+        return this.itemCache.get(`${game}:${itemId}`) || null;
     }
 
     getLocationName(game, locationId) {
-        const gamePackage = this.client.package.get(game);
-        if (!gamePackage || !gamePackage.location_name_to_id) return null;
-
-        const entry = Object.entries(gamePackage.location_name_to_id)
-            .find(([_, id]) => id === locationId);
-
-        return entry ? entry[0] : null;
+        return this.locationCache.get(`${game}:${locationId}`) || null;
     }
 
     async onLocationChecked(packet) {
