@@ -86,14 +86,10 @@ class RoomMonitor {
         this.client = new Client();
 
         try {
-            console.log(`[Port ${this.port}] Initializing as Read-Only Global Room Tracker...`);
+            const wsUrl = `ws://${TARGET_HOST}:${this.port}`;
+            console.log(`[Port ${this.port}] Initializing Read-Only Global Connection to ${wsUrl}...`);
 
-            await this.client.login({
-                hostname: TARGET_HOST,
-                port: this.port,
-                game: "",
-                name: ""
-            });
+            await this.client.login(wsUrl, "", "");
 
             this.isConnected = true;
             this.isConnecting = false;
