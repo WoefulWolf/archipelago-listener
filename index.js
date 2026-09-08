@@ -86,16 +86,18 @@ class RoomMonitor {
         this.client = new Client();
 
         try {
+            console.log(`[Port ${this.port}] Initializing as Read-Only Global Room Tracker...`);
+
             await this.client.login({
                 hostname: TARGET_HOST,
                 port: this.port,
-                game: "TextClient",
-                name: BOT_NAME
+                game: "",
+                name: ""
             });
 
             this.isConnected = true;
             this.isConnecting = false;
-            console.log(`[Port ${this.port}] Connected to Archipelago room successfully.`);
+            console.log(`[Port ${this.port}] Connected globally. Monitoring ALL slots.`);
 
             this.client.addListener("printJson", (packet) => {
                 if (packet.type === "ItemSend" || packet.type === "Hint" || packet.receiving !== undefined) {
@@ -103,7 +105,14 @@ class RoomMonitor {
                 }
             });
 
+            this.client.socket.addEventListener("close", () => {
+                console.log(`[Port ${this.port}] Room connection severed.`);
+                this.disconnect();
+            });
+
         } catch (err) {
+            console.error(`[Port ${this.port}] Read-Only Handshake Failed: ${err.message || err}`);
+            this.isConnected = false;
             this.isConnecting = false;
             this.client = null;
         }
