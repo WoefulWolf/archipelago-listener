@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -85,6 +84,30 @@ async fn main() {
     scan_loop(config).await;
 }
 
+pub fn hex_color_from_index(index: u32, len: u32) -> u32 {
+    let total_slots = len.max(1);
+    let hue = (index as f32 / total_slots as f32 * 360.0) % 360.0;
+    hsl_to_hex(hue, 0.85, 0.55)
+}
+
+fn hsl_to_hex(hue: f32, saturation: f32, lightness: f32) -> u32 {
+    let c = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation;
+    let x = c * (1.0 - ((hue / 60.0) % 2.0 - 1.0).abs());
+    let m = lightness - c / 2.0;
+
+    let (r, g, b) = match hue {
+        h if h < 60.0 => (c, x, 0.0),
+        h if h < 120.0 => (x, c, 0.0),
+        h if h < 180.0 => (0.0, c, x),
+        h if h < 240.0 => (0.0, x, c),
+        h if h < 300.0 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+
+    let to_byte = |v: f32| (((v + m) * 255.0).round() as u32).min(255);
+    (to_byte(r) << 16) | (to_byte(g) << 8) | to_byte(b)
+}
+
 async fn check_remote_container_port(host: &str, port: u16) -> bool {
     let connect = tokio::net::TcpStream::connect((host, port));
     matches!(
@@ -94,11 +117,7 @@ async fn check_remote_container_port(host: &str, port: u16) -> bool {
 }
 
 async fn scan_loop(config: Config) {
-    let webhook = Arc::new(WebhookClient {
-        url: config.webhook_url.clone(),
-        reqwest: Client::new(),
-        bot_name: config.bot_name.clone(),
-    });
+    let http = Client::new();
 
     let mut monitors: HashMap<u16, JoinHandle<()>> = HashMap::new();
 
@@ -141,7 +160,16 @@ async fn scan_loop(config: Config) {
             match RoomMonitor::new(&config.target_host, port, &config.slots).await {
                 Ok(monitor) => {
                     println!("[Port {port}] Connected.");
-                    monitors.insert(port, monitor.run(port, Arc::clone(&webhook)));
+                    let webhook = WebhookClient {
+                        url: config.webhook_url.clone(),
+                        reqwest: http.clone(),
+                        bot_name: config.bot_name.clone(),
+                        color: hex_color_from_index(
+                            (port - config.start_port) as u32,
+                            (config.end_port - config.start_port) as u32,
+                        ),
+                    };
+                    monitors.insert(port, monitor.run(port, webhook));
                 }
                 Err(err) => eprintln!("[Port {port}] Not monitoring: {err}"),
             }
@@ -157,6 +185,7 @@ struct WebhookClient {
     url: String,
     reqwest: Client,
     bot_name: String,
+    color: u32,
 }
 
 impl RoomMonitor {
@@ -208,7 +237,7 @@ impl RoomMonitor {
         Err("no slots were valid".to_string())
     }
 
-    pub fn run(mut self, port: u16, webhook: Arc<WebhookClient>) -> JoinHandle<()> {
+    pub fn run(mut self, port: u16, webhook: WebhookClient) -> JoinHandle<()> {
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(MONITOR_TICK_INTERVAL).await;
@@ -252,11 +281,13 @@ impl RoomMonitor {
         let mut strings = Vec::new();
         for entry in rich_texts {
             match entry {
-                RichText::Player(player) => strings.push(player.alias().to_string()),
-                RichText::PlayerName(name) => strings.push(name),
-                RichText::Item { item, .. } => strings.push(item.name().to_string()),
-                RichText::Location { location, .. } => strings.push(location.name().to_string()),
-                RichText::EntranceName(name) => strings.push(name),
+                RichText::Player(player) => strings.push(format!("**{}**", player.alias())),
+                RichText::PlayerName(name) => strings.push(format!("**{}**", name)),
+                RichText::Item { item, .. } => strings.push(format!("__{}__", item.name())),
+                RichText::Location { location, .. } => {
+                    strings.push(format!("*{}*", location.name()))
+                }
+                RichText::EntranceName(name) => strings.push(format!("*{}*", name)),
                 RichText::Color { text, .. } => strings.push(text),
                 RichText::Text(text) => strings.push(text),
             }
@@ -269,7 +300,7 @@ impl RoomMonitor {
             embeds: vec![FluxerEmbed {
                 title: "".to_string(),
                 description: formatted_string,
-                color: 0xff0000,
+                color: client.color,
                 fields: Vec::new(),
             }],
         };
